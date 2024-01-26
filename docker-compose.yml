@@ -1,0 +1,36 @@
+version: '3'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+  producer:
+    build: 
+      context: ./src/producer
+      dockerfile: Dockerfile.producer
+    depends_on:
+      - kafka
+  consumer:
+    build: 
+      context: ./src/consumer
+      dockerfile: Dockerfile.consumer
+    depends_on:
+      - kafka
+  api:
+    build:
+      context: ./src
+      dockerfile: Dockerfile.api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - producer
+      - consumer

@@ -1,1 +1,4 @@
-# go-service
+# Go Service
+
+* Postgres + Mongo db
+* 
