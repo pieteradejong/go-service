@@ -1,0 +1,8 @@
+{
+    "bootstrap.servers": "localhost:9092",
+    "acks": "all",
+    "key.serializer": "string",
+    "value.serializer": "string",
+    "auto.create.topics.enable": "true"
+  }
+  
