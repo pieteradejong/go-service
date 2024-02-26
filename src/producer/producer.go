@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -30,14 +31,18 @@ func LoadKafkaConfig(configFile string) (*KafkaConfig, error) {
 }
 
 func main() {
+	fmt.Println("Starting producer...")
 	config, err := LoadKafkaConfig("config/kafka-config.json")
 	if err != nil {
 		panic(err)
 	}
 
+	brokers := strings.Split(config.BootstrapServers, ",")
+
 	w := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{config.BootstrapServers},
-		Topic:   "my-topic",
+		// Brokers: []string{config.BootstrapServers},
+		Brokers: brokers,
+		Topic:   "topictest1",
 	})
 	defer w.Close()
 
