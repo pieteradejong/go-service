@@ -26,6 +26,14 @@ Run Docker:
 * [OPTIONAL] Add custom `/config/kafka.cfg` for Kafka config.
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
 
+Use case idea:
+1) `POST /sign` - message body -> Message Service
+2) message service saves message in DB
+3) Message svc puts message on Kafka topic
+4) Signing service reads message from Kafka topic, signs it, and sends to separate Kafka topic
+5) Message service reads signed message from Kafka, and saves message with signature to DB
+6) Message service notifies user that message has been signed and saved
+
 
 Resources:
 * Ideas:
