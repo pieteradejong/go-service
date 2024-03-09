@@ -32,7 +32,7 @@ func LoadKafkaConfig(configFile string) (*KafkaConfig, error) {
 
 func main() {
 	fmt.Println("Starting producer...")
-	config, err := LoadKafkaConfig("config/kafka-config.json")
+	config, err := LoadKafkaConfig("../config/kafka-config.json")
 	if err != nil {
 		panic(err)
 	}
@@ -42,14 +42,14 @@ func main() {
 	w := kafka.NewWriter(kafka.WriterConfig{
 		// Brokers: []string{config.BootstrapServers},
 		Brokers: brokers,
-		Topic:   "topictest1",
+		Topic:   "testtopic1",
 	})
 	defer w.Close()
 
 	err = w.WriteMessages(context.Background(),
 		kafka.Message{
 			Key:   []byte("Key-A"),
-			Value: []byte("Hello World!"),
+			Value: []byte("Hello from Go producer!"),
 		},
 	)
 	if err != nil {
