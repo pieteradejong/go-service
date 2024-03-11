@@ -4,15 +4,36 @@
 * Module: Producer, Consumer, HTTP API
 
 
-# Run
-Zookeeper and Kafka (depending location of your installation)
+# Basic Run Local
+Start Zookeeper and Kafka (depending your specific setup)
 
 ```bash
 $ zookeeper-server-start.sh config/zookeeper.properties
 $ kafka-server-start.sh config/server.properties
 ```
 
-Run Docker:
+
+Basic Kafka commands (from `$KAFKA_HOME/bin`):
+
+List topics:
+`$ kafka-topics --list --bootstrap-server localhost:9092`
+
+Produce from one terminal tab:
+`$ kafka-console-producer --topic testtopic1 --bootstrap-server localhost:9092`
+
+Consume from another tab:
+`$ kafka-console-consumer --topic testtopic1 --bootstrap-server localhost:9092`
+
+Run `producer/producer.go` to send a message:
+`$ go run producer.go`
+
+Test `sign-service`:
+`$ curl -X GET localhost:8080/health`
+
+Send message:
+`$ curl -X POST http://localhost:8080/sign -H "Content-Type: application/json" -d '{"message": "hello to sign service"}'`
+
+## Run Docker:
 `docker-compose up`
 
 `docker exec kafka-1 kafka-topics --create --topic topictest1 --partitions 4 --replication-factor 2 --if-not-exists --zookeeper zk1:22181,zk2:32181,zk3:42181`
@@ -21,8 +42,10 @@ Run Docker:
 # Ongoing work
 * [DONE] Consolidated producer, consumer, API into one Go module.
 * [DONE] Create `docker-compose` for Zookeeper and Kafka Broker, run production-relevant setup locally.
-* [IN PROGRESS] Create single topic on Kafka Broker and produce + consume messages.
-  * TODO: fix producer connect
+* [DONE] Create single topic on Kafka Broker and produce + consume messages.
+* [TODO] `POST /sign {message}` is sent to producer
+* [TODO] Consumer service reads from Kafka and logs message
+* [TODO]: Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
 * [OPTIONAL] Add custom `/config/kafka.cfg` for Kafka config.
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
 
