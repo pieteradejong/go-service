@@ -1,8 +1,0 @@
-FROM golang:1.17 as builder
-WORKDIR /app
-COPY go.mod .
-RUN go mod download
-COPY src/ .
-RUN go build -o main ./api.go
-EXPOSE 8080
-CMD ["./main"]

@@ -30,17 +30,18 @@ func LoadKafkaConfig(configFile string) (*KafkaConfig, error) {
 }
 
 func main() {
-	config, err := LoadKafkaConfig("config/kafka-config.json")
+	config, err := LoadKafkaConfig("../../kafka-config.json")
 	if err != nil {
 		panic(err)
 	}
 
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{config.BootstrapServers},
-		Topic:    "my-topic",
-		GroupID:  "my-group",
-		MinBytes: 10e3, // 10KB
-		MaxBytes: 10e6, // 10MB
+		Brokers:        []string{config.BootstrapServers},
+		Topic:          "testtopic1",
+		GroupID:        "my-group",
+		MinBytes:       10e3,
+		MaxBytes:       10e6,
+		CommitInterval: 0,
 	})
 	defer r.Close()
 
@@ -50,5 +51,9 @@ func main() {
 			panic(err)
 		}
 		fmt.Printf("message at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
+
+		if err := r.CommitMessages(context.Background(), m); err != nil {
+			panic("failed to commit messages: " + err.Error())
+		}
 	}
 }

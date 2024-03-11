@@ -43,9 +43,14 @@ Send message:
 * [DONE] Consolidated producer, consumer, API into one Go module.
 * [DONE] Create `docker-compose` for Zookeeper and Kafka Broker, run production-relevant setup locally.
 * [DONE] Create single topic on Kafka Broker and produce + consume messages.
-* [TODO] `POST /sign {message}` is sent to producer
-* [TODO] Consumer service reads from Kafka and logs message
-* [TODO]: Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
+* [DONE] `POST /sign {message}` is sent to producer
+* [DONE] Consumer service reads from Kafka and logs message to console
+* [TODO] Implement secure data transit e.g. through SSL
+* [TODO] Message send retry with exponential back-off
+* [TODO] Monitoring and logging, e.g. via a web interface
+* [TODO] Add config parameters to `config/kafka-config.json`
+* [TODO] Unit testing 
+* [TODO] Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
 * [OPTIONAL] Add custom `/config/kafka.cfg` for Kafka config.
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
 

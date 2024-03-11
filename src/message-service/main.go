@@ -79,7 +79,6 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: send req.Message to Kafka
 	err = s.KafkaWriter.WriteMessages(context.Background(),
 		kafka.Message{
 			Key:   []byte("Key-A"),
@@ -91,15 +90,7 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// signedMessage := req.Message + "-signed"
-	// fmt.Println("Signed Message:", signedMessage)
-
-	// response := map[string]string{"signedMessage": signedMessage}
-	// jsonResponse, err := json.Marshal(response)
-	// if err != nil {
-	// 	http.Error(w, "Error creating JSON response", http.StatusInternalServerError)
-	// 	return
-	// }
+	fmt.Println("Sent message:", req.Message)
 
 	response := map[string]string{"message": "Message accepted for processing"}
 	jsonResponse, err := json.Marshal(response)
@@ -108,14 +99,13 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO modify response to send 202 Accepted
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write(jsonResponse)
 }
 
 func main() {
-	config, err := LoadKafkaConfig("../config/kafka-config.json")
+	config, err := LoadKafkaConfig("../../kafka-config.json")
 	if err != nil {
 		panic(err)
 	}
