@@ -1,0 +1,12 @@
+FROM golang:1.17 as builder
+WORKDIR /app
+COPY go.mod ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o sign-service .
+
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/sign-service .
+COPY kafka-config.json ./
+CMD ["./sign-service"]

@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -105,15 +104,15 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	config, err := LoadKafkaConfig("../../kafka-config.json")
+	config, err := LoadKafkaConfig("kafka-config.json")
 	if err != nil {
 		panic(err)
 	}
 
-	brokers := strings.Split(config.BootstrapServers, ",")
+	// brokers := strings.Split(config.BootstrapServers, ",")
 	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: brokers,
-		Topic:   "testtopic1",
+		Brokers: []string{config.BootstrapServers},
+		Topic:   "message-sign-request",
 	})
 	defer writer.Close()
 
