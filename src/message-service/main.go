@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -65,6 +67,22 @@ func (s *Server) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
+
+func (s *Server) writeToKafkaWithRetry(msg kafka.Message, maxRetries int, initialBackoff time.Duration) error {
+	var err error
+	backoff := initialBackoff
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if err = s.KafkaWriter.WriteMessages(context.Background(), msg); err == nil {
+			return nil
+		}
+		time.Sleep(backoff)
+		backoff *= 2
+		backoff += time.Duration(rand.Intn(100)) * time.Millisecond
+	}
+	return err
+}
+
 func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Unsupported HTTP method", http.StatusMethodNotAllowed)
@@ -78,13 +96,12 @@ func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.KafkaWriter.WriteMessages(context.Background(),
-		kafka.Message{
-			Key:   []byte("Key-A"),
-			Value: []byte(req.Message),
-		},
-	)
-	if err != nil {
+	message := kafka.Message{
+		Key:   []byte("Key-A"),
+		Value: []byte(req.Message),
+	}
+
+	if err := s.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
 		http.Error(w, "Error sending message to Kafka", http.StatusInternalServerError)
 		return
 	}
@@ -117,14 +134,10 @@ func main() {
 	defer writer.Close()
 
 	server := NewServer(writer)
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Service is running")
 	})
-
 	http.HandleFunc("/health", server.healthCheckHandler)
-
 	http.HandleFunc("/sign", server.signHandler)
-
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -16,12 +18,12 @@ type KafkaConfig struct {
 	ValueSerializer  string `json:"value.serializer"`
 }
 
-type App struct {
+type Server struct {
 	writer *kafka.Writer
 }
 
-func NewApp(writer *kafka.Writer) *App {
-	return &App{writer: writer}
+func NewServer(writer *kafka.Writer) *Server {
+	return &Server{writer: writer}
 }
 
 func LoadKafkaConfig(configFile string) (*KafkaConfig, error) {
@@ -41,13 +43,19 @@ func signMessage(originalMessage []byte) []byte {
 	return append(originalMessage, []byte("-signed")...)
 }
 
-func (app *App) writeToKafka(key, signedMessage []byte) error {
-	return app.writer.WriteMessages(context.Background(),
-		kafka.Message{
-			Key:   key,
-			Value: signedMessage,
-		},
-	)
+func (s *Server) writeToKafkaWithRetry(msg kafka.Message, maxRetries int, initialBackoff time.Duration) error {
+	var err error
+	backoff := initialBackoff
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if err = s.writer.WriteMessages(context.Background(), msg); err == nil {
+			return nil
+		}
+		time.Sleep(backoff)
+		backoff *= 2
+		backoff += time.Duration(rand.Intn(100)) * time.Millisecond // Add jitter
+	}
+	return err
 }
 
 func main() {
@@ -55,15 +63,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("BootstrapServers:", config.BootstrapServers) // Debugging line
-	if config.BootstrapServers == "" {
-		panic("BootstrapServers is empty")
-	}
 
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: []string{config.BootstrapServers},
-		Topic:   "message-sign-request",
-		// GroupID:        "my-group",
+		Brokers:        []string{config.BootstrapServers},
+		Topic:          "message-sign-request",
 		MinBytes:       10e3,
 		MaxBytes:       10e6,
 		CommitInterval: 0,
@@ -76,7 +79,7 @@ func main() {
 	})
 	defer signedMessageWriter.Close()
 
-	app := NewApp(signedMessageWriter)
+	server := NewServer(signedMessageWriter)
 
 	for {
 		m, err := r.ReadMessage(context.Background())
@@ -85,14 +88,17 @@ func main() {
 			fmt.Printf("Error reading message: %s\n", err)
 			continue
 		}
-		fmt.Printf("message at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
+		fmt.Printf("message_630pm at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
 
 		signedMessage := signMessage(m.Value)
 
-		if err := app.writeToKafka(m.Key, signedMessage); err != nil {
-			// TODO: handle gracefully
+		message := kafka.Message{
+			Key:   m.Key,
+			Value: signedMessage,
+		}
+
+		if err := server.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
 			fmt.Printf("failed to write signed message to Kafka: %s\n", err)
-			// fmt.Printf("Error reading message: %s\n", err)
 			continue
 		}
 	}

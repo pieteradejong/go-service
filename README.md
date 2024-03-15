@@ -64,7 +64,7 @@ Send message:
 * [FIXED(*)] `docker-compose logs sign-service` -> `connection refused`
   * (*) the fix was to `docker rmi` all project docker images, and rebuild with `docker-compose up --build`
 * [TODO] Implement secure data transit e.g. through SSL
-* [TODO] Message send retry with exponential back-off
+* [DONE] Message send retry with exponential back-off
 * [TODO] Monitoring and logging, e.g. via a web interface
 * [TODO] Add config parameters to `config/kafka-config.json`
 * [TODO] Unit testing 
