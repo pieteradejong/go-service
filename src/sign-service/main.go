@@ -55,6 +55,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("BootstrapServers:", config.BootstrapServers) // Debugging line
+	if config.BootstrapServers == "" {
+		panic("BootstrapServers is empty")
+	}
 
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{config.BootstrapServers},
@@ -77,14 +81,19 @@ func main() {
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
-			panic(err)
+			// TODO: handle gracefully
+			fmt.Printf("Error reading message: %s\n", err)
+			continue
 		}
 		fmt.Printf("message at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
 
 		signedMessage := signMessage(m.Value)
 
 		if err := app.writeToKafka(m.Key, signedMessage); err != nil {
-			panic("failed to write signed message to Kafka: " + err.Error())
+			// TODO: handle gracefully
+			fmt.Printf("failed to write signed message to Kafka: %s\n", err)
+			// fmt.Printf("Error reading message: %s\n", err)
+			continue
 		}
 	}
 }
