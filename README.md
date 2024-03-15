@@ -1,5 +1,7 @@
 # Golang + Kafka:L "message signing"
 
+[![golang-gofmt](https://github.com/pieteradejong/go-service/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/pieteradejong/go-service/actions/workflows/go.yml)
+
 ## Project summary
 Goal: Familiarize with Golang and Kafka.
 
