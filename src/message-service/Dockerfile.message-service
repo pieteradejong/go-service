@@ -9,4 +9,5 @@ FROM alpine:latest
 WORKDIR /root/
 COPY --from=builder /app/message-service .
 COPY kafka-config.json ./
+# COPY dummy-server.crt dummy-server.key dummy-server.csr ./
 CMD ["./message-service"]

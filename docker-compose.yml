@@ -29,7 +29,8 @@ services:
   message-service:
     build:
       context: ./src/message-service
-      dockerfile: Dockerfile.message-service
+      # context: ./src
+      dockerfile: message-service/Dockerfile.message-service
     depends_on:
       kafka:
         condition: service_healthy
@@ -41,7 +42,8 @@ services:
   sign-service:
     build:
       context: ./src/sign-service
-      dockerfile: Dockerfile.sign-service
+      # context: ./src
+      dockerfile: sign-service/Dockerfile.sign-service
     depends_on:
       kafka:
         condition: service_healthy

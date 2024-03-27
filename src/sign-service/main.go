@@ -64,18 +64,31 @@ func main() {
 		panic(err)
 	}
 
+	// tlsConfig, err := tlsconfig.SetupTLSConfig("server.crt", "server.key", "server.crt")
+	// if err != nil {
+	// 	log.Fatalf("Failed to setup TLS config: %v", err)
+	// }
+
+	// dialer := &kafka.Dialer{
+	// 	Timeout:   10 * time.Second,
+	// 	TLS:       tlsConfig,
+	// 	DualStack: true,
+	// }
+
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        []string{config.BootstrapServers},
 		Topic:          "message-sign-request",
 		MinBytes:       10e3,
 		MaxBytes:       10e6,
 		CommitInterval: 0,
+		// Dialer:         dialer,
 	})
 	defer r.Close()
 
 	signedMessageWriter := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{config.BootstrapServers},
 		Topic:   "message-sign-complete",
+		// Dialer:  dialer,
 	})
 	defer signedMessageWriter.Close()
 

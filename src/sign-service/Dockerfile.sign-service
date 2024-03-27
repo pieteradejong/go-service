@@ -9,4 +9,5 @@ FROM alpine:latest
 WORKDIR /root/
 COPY --from=builder /app/sign-service .
 COPY kafka-config.json ./
+# COPY dummy-server.crt dummy-server.key dummy-server.csr ./
 CMD ["./sign-service"]
