@@ -1,0 +1,27 @@
+FROM bitnami/spark:latest
+
+# will exit 100 without this
+USER root
+
+# RUN apt-get update && \
+#     apt-get install -y python3-pip && \
+#     rm -rf /var/lib/apt/lists/*
+RUN apt update && \
+    apt install -y python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /opt/spark-apps/
+RUN pip3 install --no-cache-dir -r /opt/spark-apps/requirements.txt
+
+# RUN curl -L -o /opt/spark-apps/spark-sql-kafka-0-10_2.12-3.5.1.jar \
+#      https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.5.1/spark-sql-kafka-0-10_2.12-3.5.1.jar
+
+COPY spark_streaming_job_emojis.py /opt/spark-apps/
+
+CMD /opt/bitnami/spark/bin/spark-submit \
+    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
+    /opt/spark-apps/spark_streaming_job_emojis.py
+
+# CMD /opt/bitnami/spark/bin/spark-submit \
+#     --jars /opt/spark-apps/spark-sql-kafka-0-10_2.12-3.5.1.jar \
+#     /opt/spark-apps/spark_streaming_job_emojis.py

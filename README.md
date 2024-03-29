@@ -3,7 +3,6 @@
 
 [![gofmt](https://github.com/pieteradejong/go-service/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/pieteradejong/go-service/actions/workflows/go.yml)
 
-
 [![gotest](https://github.com/pieteradejong/go-service/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/pieteradejong/go-service/actions/workflows/go.yml)
 
 
@@ -19,6 +18,37 @@ Goal: Familiarize with Golang and Kafka.
 4) Signing service reads message from Kafka topic, signs it, and sends to separate Kafka topic
 5) Message service reads signed message from Kafka, and saves message with signature to DB
 6) Message service notifies user that message has been signed and saved
+
+### Drawing
+
+User
+  |
+  v
+[Message Service] -- POST /sign
+  |                     |
+  | Saves message       | Puts message on
+  | in DB               | Kafka topic
+  |                     v
+  |               [Kafka Topic: message-sign-request]
+  |                     |
+  |                     | Reads message
+  |                     v
+  |               [Signing Service] -- Signs message
+  |                     | Sends to separate
+  |                     | Kafka topic
+  |                     v
+  |               [Kafka Topic: message-sign-complete]
+  |                     |
+  | Reads signed message|
+  v                     |
+[Message Service]       |
+  | Saves message with  |
+  | signature to DB     |
+  |                     |
+  | Notifies user       |
+  v                     |
+[User] <-----------------
+
 
 # Basic Run Local
 Start Zookeeper and Kafka (depending your specific setup)
@@ -70,12 +100,18 @@ Send message:
 * [DONE] Consumer service reads from Kafka and logs message to console
 * [FIXED(*)] `docker-compose logs sign-service` -> `connection refused`
   * (*) the fix was to `docker rmi` all project docker images, and rebuild with `docker-compose up --build`
-* [TODO] Implement secure data transit e.g. through SSL
+* [WIP] Implement secure data transit e.g. through SSL
 * [DONE] Message send retry with exponential back-off
 * [TODO] Monitoring and logging, e.g. via a web interface
 * [TODO] Add config parameters to `config/kafka-config.json`
 * [TODO] Unit testing 
-* [TODO] Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
+* [DONE] Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
+* [TODO] Add Spark Streaming that will read data from an "emoji" topic, perform some aggregation, and publish those streaming stats to another kafka topic(s).
+  * [TODO] Add `simulate requests` script to simulate POST'ing emojis/reactions. Message payload should include: `user_id`, `emoji_str`, `timestamp`, `reaction_id`.
+  * [TODO] Add Spark node to setup, incl. to `docker-compose.yml`
+  * [TODO] Within Spark node, add PySpark stream job, simple e.g. "count" for now
+  * [TODO] Pubslish "count" to kafka topic
+  * [TODO] ....
 * [OPTIONAL] Add custom `/config/kafka.cfg` for Kafka config.
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
 

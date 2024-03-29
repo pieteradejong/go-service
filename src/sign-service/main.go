@@ -77,7 +77,7 @@ func main() {
 
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        []string{config.BootstrapServers},
-		Topic:          "message-sign-request",
+		Topic:          "reaction-emoji-submission",
 		MinBytes:       10e3,
 		MaxBytes:       10e6,
 		CommitInterval: 0,

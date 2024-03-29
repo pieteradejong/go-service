@@ -83,7 +83,7 @@ func (s *Server) writeToKafkaWithRetry(msg kafka.Message, maxRetries int, initia
 	return err
 }
 
-func (s *Server) signHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) reactionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Unsupported HTTP method", http.StatusMethodNotAllowed)
 		return
@@ -140,7 +140,7 @@ func main() {
 	// brokers := strings.Split(config.BootstrapServers, ",")
 	writer := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{config.BootstrapServers},
-		Topic:   "message-sign-request",
+		Topic:   "reaction-emoji-submission",
 		// Dialer:  dialer,
 	})
 	defer writer.Close()
@@ -150,6 +150,6 @@ func main() {
 		fmt.Fprintf(w, "Service is running")
 	})
 	http.HandleFunc("/health", server.healthCheckHandler)
-	http.HandleFunc("/sign", server.signHandler)
+	http.HandleFunc("/reaction", server.reactionHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
