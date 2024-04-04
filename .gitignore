@@ -21,3 +21,4 @@ dummy-server.*
 # Go workspace file
 go.work
 go.sum
+venv/

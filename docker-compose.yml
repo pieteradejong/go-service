@@ -39,16 +39,16 @@ services:
     environment:
       KAFKA_BROKER: kafka:9092
   
-  # sign-service:
-  #   build:
-  #     context: ./src/sign-service
-  #     # context: ./src
-  #     dockerfile: sign-service/Dockerfile.sign-service
-  #   depends_on:
-  #     kafka:
-  #       condition: service_healthy
-  #   environment:
-  #     KAFKA_BROKER: kafka:9092
+  sign-service:
+    build:
+      context: ./src/sign-service
+      # context: ./src
+      dockerfile: Dockerfile.sign-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER: kafka:9092
 
   spark:
     build:

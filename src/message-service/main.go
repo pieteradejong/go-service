@@ -20,7 +20,9 @@ type HealthCheckResponse struct {
 }
 
 type SignRequest struct {
-	Message string `json:"message"`
+	UserID    int64  `json:"user_id"`
+	Timestamp int64  `json:"timestamp"`
+	Emoji     string `json:"emoji"`
 }
 
 type KafkaConfig struct {
@@ -96,17 +98,23 @@ func (s *Server) reactionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := kafka.Message{
-		Key:   []byte("Key-A"),
-		Value: []byte(req.Message),
-	}
-
-	if err := s.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
-		http.Error(w, "Error sending message to Kafka", http.StatusInternalServerError)
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error marshaling request to JSON: %v", err)
+		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println("Sent message:", req.Message)
+	message := kafka.Message{
+		Key:   []byte(req.Emoji),
+		Value: reqBytes,
+	}
+
+	if err := s.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
+		log.Printf("Error sending message to Kafka: %v", err)
+		http.Error(w, "Error sending message to Kafka", http.StatusInternalServerError)
+		return
+	}
 
 	response := map[string]string{"message": "Message accepted for processing"}
 	jsonResponse, err := json.Marshal(response)

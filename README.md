@@ -107,15 +107,27 @@ Send message:
 * [TODO] Unit testing 
 * [DONE] Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
 * [TODO] Add Spark Streaming that will read data from an "emoji" topic, perform some aggregation, and publish those streaming stats to another kafka topic(s).
+  * DESIGN NOTE: key aspects are: **realtime** (Spark streaming window of a few seconds); data completeness is valuable but not critical (it's just emojis); **low latency** is critical; producer pattern: app users will likely send short bursts of a subset of a few distinct emojis; processing/consumption pattern: all emojis are **aggregated by frequency** sent over a several(2?)-second **time window**, and initially just logged; later, build out "clients" that subscribe to the system and via PubSub send emoji aggregations, perhaps based on proximity etc.
   * [TODO] Add `simulate requests` script to simulate POST'ing emojis/reactions. Message payload should include: `user_id`, `emoji_str`, `timestamp`, `reaction_id`.
-  * [TODO] Add Spark node to setup, incl. to `docker-compose.yml`
-  * [TODO] Within Spark node, add PySpark stream job, simple e.g. "count" for now
-  * [TODO] Pubslish "count" to kafka topic
-  * [TODO] ....
+  * [DONE] Add Spark node to setup, incl. to `docker-compose.yml`
+  * [DONE] Within Spark node, add PySpark stream job, simple e.g. "count" for now
+  * [DONE] Publish "count" to kafka topic
+  * [TODO] Figure out what to actually do with the emoji counts
+  * [TODO] Refactor `simulate_requests.py` to handle multiple clients etc.
 * [OPTIONAL] Add custom `/config/kafka.cfg` for Kafka config.
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
+* [TODO] for emoji application, change `Key` for Kafka message to `null` since we **don't need ordering**, and this will allow Kafka to load balance across all paritions for a topic.
 
 
+### Spark Streaming Configuration choices
+* Batch interval: 1 second. The user experience requires as close to realtime as posibble, and given our development setup we can handle the load for now.
+* Checkpointing: enabled, and directory set, so we don't lose data.
+* Backpressure: disabled, probably not needed for now.
+* Windowed computations: disabled for now.
+* **Overall Spark use case note**: we want to simulate thousands of users simultaneously sending emojis, and the system having to respond with near-real-time "aggregate mood of the crowd" quickly. Given this is local dev and not prod, we might have to do things differnetly and discover as we go.
+
+**View Batch jobs in Spark UI**
+![Spark Streaming Batch Statistics](Spark_Streaming_Batch_Statistics.png)
 
 
 Resources:

@@ -75,44 +75,44 @@ func main() {
 	// 	DualStack: true,
 	// }
 
-	r := kafka.NewReader(kafka.ReaderConfig{
+	emojiCountReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        []string{config.BootstrapServers},
-		Topic:          "reaction-emoji-submission",
+		Topic:          "reaction-emoji-counts",
 		MinBytes:       10e3,
 		MaxBytes:       10e6,
 		CommitInterval: 0,
 		// Dialer:         dialer,
 	})
-	defer r.Close()
+	defer emojiCountReader.Close()
 
-	signedMessageWriter := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{config.BootstrapServers},
-		Topic:   "message-sign-complete",
-		// Dialer:  dialer,
-	})
-	defer signedMessageWriter.Close()
+	// signedMessageWriter := kafka.NewWriter(kafka.WriterConfig{
+	// 	Brokers: []string{config.BootstrapServers},
+	// 	Topic:   "message-sign-complete",
+	// 	// Dialer:  dialer,
+	// })
+	// defer signedMessageWriter.Close()
 
-	server := NewServer(signedMessageWriter)
+	// server := NewServer(signedMessageWriter)
 
 	for {
-		m, err := r.ReadMessage(context.Background())
+		m, err := emojiCountReader.ReadMessage(context.Background())
 		if err != nil {
 			// TODO: handle gracefully
 			fmt.Printf("Error reading message: %s\n", err)
 			continue
 		}
-		fmt.Printf("message_630pm at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
+		fmt.Printf("\033[32memoji count at offset %d: %s = %s\n\033[0m", m.Offset, string(m.Key), string(m.Value))
 
-		signedMessage := signMessage(m.Value)
+		// signedMessage := signMessage(m.Value)
 
-		message := kafka.Message{
-			Key:   m.Key,
-			Value: signedMessage,
-		}
+		// message := kafka.Message{
+		// 	Key:   m.Key,
+		// 	Value: signedMessage,
+		// }
 
-		if err := server.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
-			fmt.Printf("failed to write signed message to Kafka: %s\n", err)
-			continue
-		}
+		// if err := server.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
+		// 	fmt.Printf("failed to write signed message to Kafka: %s\n", err)
+		// 	continue
+		// }
 	}
 }

@@ -1,8 +1,12 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import expr
+from pyspark.sql.functions import from_json, window, col, struct, to_json
+from pyspark.sql.types import StructType, StructField, StringType, LongType
 
-# import os
-# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.5.1'
+schema = StructType([
+    StructField("user_id", LongType(), True),
+    StructField("timestamp", LongType(), True),
+    StructField("emoji", StringType(), True)
+])
 
 spark = SparkSession.builder.appName("EmojiCount").getOrCreate()
 
@@ -11,18 +15,32 @@ df = spark \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
     .option("subscribe", "reaction-emoji-submission") \
+    .option("includeTimestamp", "true") \
     .load()
 
-emojiCounts = df.groupBy("value").count()
+df = df.selectExpr("CAST(value AS STRING) as json_str") \
+    .select(from_json("json_str", schema).alias("data")).select("data.*")
+
+emojiCounts = df \
+    .withColumn("timestamp", (col("timestamp") / 1000).cast("timestamp")) \
+    .groupBy(
+        window(col("timestamp"), "2 seconds"),
+        col("emoji")
+    ) \
+    .count()
 
 query = emojiCounts \
-    .selectExpr("CAST(value AS STRING) AS key", "CAST(count AS STRING) AS value") \
+    .select(
+        col("emoji").alias("key"),
+        to_json(struct(col("emoji"), col("count"))).alias("value")
+    ) \
     .writeStream \
-    .outputMode("complete") \
+    .outputMode("update") \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
     .option("topic", "reaction-emoji-counts") \
     .option("checkpointLocation", "/opt/spark-apps/checkpoints") \
+    .trigger(processingTime='2 seconds') \
     .start()
 
 query.awaitTermination()
