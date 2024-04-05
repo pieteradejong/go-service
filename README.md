@@ -108,7 +108,7 @@ Send message:
 * [DONE] Fix Docker-compose setup - hostnames and ports for ZooKeeper and Kafka
 * [TODO] Add Spark Streaming that will read data from an "emoji" topic, perform some aggregation, and publish those streaming stats to another kafka topic(s).
   * DESIGN NOTE: key aspects are: **realtime** (Spark streaming window of a few seconds); data completeness is valuable but not critical (it's just emojis); **low latency** is critical; producer pattern: app users will likely send short bursts of a subset of a few distinct emojis; processing/consumption pattern: all emojis are **aggregated by frequency** sent over a several(2?)-second **time window**, and initially just logged; later, build out "clients" that subscribe to the system and via PubSub send emoji aggregations, perhaps based on proximity etc.
-  * [TODO] Add `simulate requests` script to simulate POST'ing emojis/reactions. Message payload should include: `user_id`, `emoji_str`, `timestamp`, `reaction_id`.
+  * [DONE] Add `simulate requests` script to simulate POST'ing emojis/reactions. Message payload should include: `user_id`, `emoji_str`, `timestamp`, `reaction_id`.
   * [DONE] Add Spark node to setup, incl. to `docker-compose.yml`
   * [DONE] Within Spark node, add PySpark stream job, simple e.g. "count" for now
   * [DONE] Publish "count" to kafka topic
@@ -117,7 +117,7 @@ Send message:
 * [OPTIONAL] Add custom `/config/kafka.cfg` for Kafka config.
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
 * [TODO] for emoji application, change `Key` for Kafka message to `null` since we **don't need ordering**, and this will allow Kafka to load balance across all paritions for a topic.
-
+* [TODO] Question: how to consume emoji reactions?
 
 ### Spark Streaming Configuration choices
 * Batch interval: 1 second. The user experience requires as close to realtime as posibble, and given our development setup we can handle the load for now.

@@ -1,8 +1,8 @@
-import threading
 import time
-import requests
 import json
 import random
+import asyncio
+import aiohttp
 
 
 emojis = [
@@ -26,24 +26,24 @@ endpoint = "/reaction"
 full_url = base_url + endpoint
 headers = {'Content-Type': 'application/json'}
 
-NUM_EMOJI_REACTIONS = 1
-def simulate_client(user_id: int, emoji_list: list) -> None:
+NUM_SIMULATED_CLIENTS = 10_000
+NUM_EMOJI_REACTIONS = 4
+
+async def simulate_client(session, user_id: int, emoji_list: list) -> None:
     for _ in range(NUM_EMOJI_REACTIONS):
         emoji = random.choice(emoji_list)
         timestamp = int(time.time())
         payload = {"user_id": user_id, "emoji": emoji, "timestamp": timestamp}
-        print(f'Client {user_id} selected emoji: {emoji}')
-        response = requests.post(full_url, headers=headers, data=json.dumps(payload))
-        print(f"Response code: {response.status_code}, message: {response.text}")
-        time.sleep(random.uniform(0.5, 2))
+        async with session.post(full_url, json=payload) as response:
+            print(f'Client {user_id} selected emoji: {emoji}')
+            print(f"Response code: {response.status}, message: await {response.text()}")
 
-NUM_SIMULATED_CLIENTS = 1
-threads = []
-for i in range(NUM_SIMULATED_CLIENTS):
-    t = threading.Thread(target=simulate_client, args=(i, emojis_flat))
-    threads.append(t)
-    t.start()
 
-for t in threads:
-    t.join()
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        tasks = [asyncio.create_task(simulate_client(session, i, emojis_flat)) for i in range(NUM_SIMULATED_CLIENTS)]
+        await asyncio.gather(*tasks)
+
+asyncio.run(main())
 
