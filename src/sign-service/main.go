@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"log"
+	"net/http"
 	"os"
-	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -39,41 +39,60 @@ func LoadKafkaConfig(configFile string) (*KafkaConfig, error) {
 	return &config, nil
 }
 
-func signMessage(originalMessage []byte) []byte {
-	return append(originalMessage, []byte("-signed")...)
+func handleSSE(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	clientChan := make(chan []byte)
+	register <- clientChan
+
+	defer func() {
+		unregister <- clientChan
+	}()
+
+	for msg := range clientChan {
+		fmt.Fprintf(w, "data: %s\n\n", msg)
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+	}
 }
 
-func (s *Server) writeToKafkaWithRetry(msg kafka.Message, maxRetries int, initialBackoff time.Duration) error {
-	var err error
-	backoff := initialBackoff
+var (
+	register   = make(chan chan []byte)
+	unregister = make(chan chan []byte)
+	broadcast  = make(chan []byte)
+)
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		if err = s.writer.WriteMessages(context.Background(), msg); err == nil {
-			return nil
+func manageClients() {
+	clients := make(map[chan []byte]bool)
+
+	for {
+		select {
+		case client := <-register:
+			clients[client] = true
+		case client := <-unregister:
+			delete(clients, client)
+			close(client)
+		case msg := <-broadcast:
+			for client := range clients {
+				client <- msg
+			}
 		}
-		time.Sleep(backoff)
-		backoff *= 2
-		backoff += time.Duration(rand.Intn(100)) * time.Millisecond // Add jitter
 	}
-	return err
 }
 
 func main() {
+	go manageClients()
+	http.HandleFunc("/events", handleSSE)
+	log.Println("http server started on :8000")
+	go http.ListenAndServe(":8000", nil)
+
 	config, err := LoadKafkaConfig("kafka-config.json")
 	if err != nil {
 		panic(err)
 	}
-
-	// tlsConfig, err := tlsconfig.SetupTLSConfig("server.crt", "server.key", "server.crt")
-	// if err != nil {
-	// 	log.Fatalf("Failed to setup TLS config: %v", err)
-	// }
-
-	// dialer := &kafka.Dialer{
-	// 	Timeout:   10 * time.Second,
-	// 	TLS:       tlsConfig,
-	// 	DualStack: true,
-	// }
 
 	emojiCountReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        []string{config.BootstrapServers},
@@ -81,18 +100,8 @@ func main() {
 		MinBytes:       10e3,
 		MaxBytes:       10e6,
 		CommitInterval: 0,
-		// Dialer:         dialer,
 	})
 	defer emojiCountReader.Close()
-
-	// signedMessageWriter := kafka.NewWriter(kafka.WriterConfig{
-	// 	Brokers: []string{config.BootstrapServers},
-	// 	Topic:   "message-sign-complete",
-	// 	// Dialer:  dialer,
-	// })
-	// defer signedMessageWriter.Close()
-
-	// server := NewServer(signedMessageWriter)
 
 	for {
 		m, err := emojiCountReader.ReadMessage(context.Background())
@@ -103,16 +112,5 @@ func main() {
 		}
 		fmt.Printf("\033[32memoji count at offset %d: %s = %s\n\033[0m", m.Offset, string(m.Key), string(m.Value))
 
-		// signedMessage := signMessage(m.Value)
-
-		// message := kafka.Message{
-		// 	Key:   m.Key,
-		// 	Value: signedMessage,
-		// }
-
-		// if err := server.writeToKafkaWithRetry(message, 5, 500*time.Millisecond); err != nil {
-		// 	fmt.Printf("failed to write signed message to Kafka: %s\n", err)
-		// 	continue
-		// }
 	}
 }

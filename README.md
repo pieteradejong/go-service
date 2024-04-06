@@ -118,6 +118,35 @@ Send message:
 * [OPTIONAL] Add custom `/config/zookeeper.cfg` for Zookeeper config.
 * [TODO] for emoji application, change `Key` for Kafka message to `null` since we **don't need ordering**, and this will allow Kafka to load balance across all paritions for a topic.
 * [TODO] Question: how to consume emoji reactions?
+  * Idea: the point of the application is for users to share their sentiments towards the event as it happens. Two components to this:
+    * Contributing: submitting their own reactions.
+    * Experiencing: seeing an aggregation of the entire audience, and confirmation fo their own sensations. ("almost everyone laughed at that", "that makes some peopel also sad")
+    * Important: highlgiht not only which reactions (sad, happy, laugh), but also _intensity_: LOTS of laughter, a little sadness, etc.
+* [TODO] rename `sign-service` to (..?)
+
+### Client-Server communication
+* posting game reactions: `POST /reaction`
+* pushing aggregated emoji reactions to [subset of] users; requirements:
+  * connection is uni-directional, server is pushing aggregation updates to users
+  * relevance requires that the updates be near-real-time, with a max of 2-5 seconds delay from user's app tap.
+  * nature of updates is short text, only some emojis and metadata
+  * overall time duration: about 60-180 minutes, the length of most sports games;
+  * user base size: at least thousands, potentially tens of millions simultaneously
+  * Options for implementation: 
+    * Server Sent Events
+      *  chosen because unidirectional, simplicity, ease of implementaiton (very little client work).
+    * Web Sockets
+      *  initially considered, but we only require unidirectional.
+    * Short Polling
+      * downside: more client work, and we don't require bidirectional.
+    * Long Polling
+      * downside: more client work, and we don't require bidirectional.
+    * Webhooks
+      * not very relevant.
+    * Push Notifications
+      * briefly considered, but SSE already seems perfectly suited.
+
+
 
 ### Spark Streaming Configuration choices
 * Batch interval: 1 second. The user experience requires as close to realtime as posibble, and given our development setup we can handle the load for now.
