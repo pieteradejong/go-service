@@ -22,3 +22,6 @@ dummy-server.*
 go.work
 go.sum
 venv/
+# --- secrets (2026-10-20: the committed file had no .env rule; dotaudit D40) ---
+.env
+.env.*
